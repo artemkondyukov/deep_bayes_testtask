@@ -19,7 +19,9 @@ def lossf(w, X, y, l1, l2):
     :param l2: float, l2 коэффициент регуляризатора 
     :return: float, value of loss function
     """
-    lossf = # Вам необходимо вычислить значение функции потерь тут, решение может занимать 1 строку
+    lossf = np.log(1 + np.exp(-np.matmul(np.matmul(X, w).T, y))) + \
+                   l1 * np.linalg.norm(w, ord=1) + \
+                   l2 * np.square(np.linalg.norm(w, ord=2))
     return lossf
 
 def gradf(w, X, y, l1, l2):
@@ -33,7 +35,8 @@ def gradf(w, X, y, l1, l2):
     :param l2: float, l2 коэффициент регуляризатора 
     :return: numpy.array размера  (M,), dtype = np.float, gradient vector d lossf / dw
     """
-    gradw = # Вам необходимо вычислить градиент функции потерь тут, решение может занимать 1 строку
+    p = np.matmul(np.matmul(X, w).T, y)
+    gradw = (special.expit(p) - 1) * np.matmul(X.T, y) + l1 * np.sign(w) + 2 * l2 * w
     return gradw
 
 class LR(ClassifierMixin, BaseEstimator):
@@ -58,8 +61,16 @@ class LR(ClassifierMixin, BaseEstimator):
         :return: self
         """
         n, d = X.shape
-        self.w = # Задайте начальное приближение вектора весов
-        self.w = # Настройте параметры функции потерь с помощью градиентного спуска
+        self.w = np.random.randn(d)
+        self.w[self.w < -3] = -3
+        self.w[self.w > 3] = 3
+
+        for i in range(self.num_iter):
+            w_new = self.w - self.lr * gradf(self.w, X, y, self.l1, self.l2)
+                
+            if self.verbose != 0:
+                print "Iteration " + str(i) + ". Current loss is " + str(lossf(self.w, X, y, self.l1, self.l2))
+            self.w = w_new
         return self
 
     def predict_proba(self, X):
@@ -73,8 +84,7 @@ class LR(ClassifierMixin, BaseEstimator):
         # Вычислите вероятности принадлежности каждого 
         # объекта из X к положительному классу, используйте
         # эту функцию для реализации LR.predict
-        probs = # ...
-        return probs
+        return special.expit(np.matmul(X, self.w))
 
     def predict(self, X):
         """
@@ -85,7 +95,7 @@ class LR(ClassifierMixin, BaseEstimator):
         :return:  numpy.array размера  (N,), dtype = np.int
         """
         # Вычислите предсказания для каждого объекта из X
-        predicts = # ...
+        predicts = (self.predict_proba(X) > .5) * 2 - 1
         return predicts 
 
 def test_work():
